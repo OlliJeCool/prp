@@ -26,7 +26,6 @@ int main(){
         printf("Procento kladnych: %.2f", (double)pos/total * 100);
         printf("Procento negativnich: %.2f", (double)(total-pos)/total*100);
 
-
     }
     return 0;
 }
