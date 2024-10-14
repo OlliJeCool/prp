@@ -1,15 +1,24 @@
 #include <errno.h>
 #include <stdio.h>
-#include <utility>
-int ret = 0;
 
-void takeAndValidateInput(int*, int*);
+int takeAndValidateInput(int*, int*);
 void printRoof(int);
-void printHouse(int, int);
+void printBase(int, int);
+void printLine(int);
+void printError(int);
 
 int main(){
     int height = 0, width = 0;
-    takeAndValidateInput(&height, &width);
+    int ret = takeAndValidateInput(&width, &height);
+    if(!ret) {
+        printRoof(width);
+        printBase(width, height);
+    }
+    printError(ret);
+    return ret;
+}
+
+void printError(int ret){
     switch(ret){
         case 100:
             fprintf(stderr, "Error: Chybny vstup!\n");
@@ -20,32 +29,42 @@ int main(){
         case 102:
             fprintf(stderr, "Error: Sirka neni liche cislo!\n");
             break;
+        default:
+            break;
     }
-    if(ret != 0){ return ret; }
+ }
 
+int takeAndValidateInput(int *w, int *h){
+    if(scanf("%d %d", w, h) != 2){
+      return 100;
+    }
+    if(*w > 69 || *h > 69 || *w < 3 || *h < 3){
+        return 101;
+    }
+    if(*w % 2 != 1){
+        return 102;
+    }
     return 0;
 }
 
-void takeAndValidateInput(int *w, int *h){
-    if(scanf("%d %d", w, h) != 2){
-        ret =  100;
-        return;
+void printBase(int w, int h) {
+    printLine(w);
+    for(int i = 0; i < h - 2; i++) {
+        printf("X%*c\n", w-1, 'X');
     }
+    printLine(w);
+}
 
-    if(*w > 69 || *h > 69 || *w < 3 || *h < 3){
-        ret = 101;
-        return;
+void printLine(int w) {
+    for(int i = 0; i < w; i++) {
+        putchar('X');
     }
-
-    if(*w % 2 != 1){
-        ret = 102;
-        return;
-    }
+    putchar('\n');
 }
 
 void printRoof(int w){
-    for(int i = 0; i < w/2; i++){
-
+    printf("%*c\n", w/2+1, 'X');
+    for(int i = 1, spaces = 1; i < w/2; i++, spaces+=2){
+        printf("%*c%*c\n", w/2-i+1, 'X', spaces + 1, 'X');
     }
-
 }
