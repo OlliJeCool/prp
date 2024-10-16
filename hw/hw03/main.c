@@ -4,7 +4,7 @@
 int takeAndValidateInput(int*, int*);
 void printRoof(int);
 void printBase(int, int);
-void printLine(int, int, int);
+void printLine(int, int, int, int);
 void printError(int);
 
 int main(){
@@ -48,35 +48,33 @@ int takeAndValidateInput(int *w, int *h){
 }
 
 void printBase(int w, int h) {
-    printLine(w, 1, 0);
-    for(int i = 0; i < h-2; i++) {
-        printLine(w, 0, i%2);
+    for(int i = 0; i < h; i++) {
+        printLine(w, h, i, i%2);
+        putchar('\n');
     }
-    printLine(w, 1, 0);
 }
 
-void printLine(int w, int simple, int offset) {
-    char options[] = {'o', '*'};
-    putchar('X');
-    if(simple) {
-        for(int i = 0; i < w-2; i++) {
+void printLine(int w, int h, int currentH, int offset) {
+    if(currentH == 0 || currentH == h-1) {
+        for(int i = 0; i < w; i++) {
             putchar('X');
         }
-        putchar('X');
-        putchar('\n');
     }
     else {
-        for(int i = offset; i < w-2+offset; i++) {
-            putchar(options[i%2]);
+        char options[] = {'X','o','*'};
+        for(int i = 0 + offset; i < w + offset; i++) {
+            if(i == 0 + offset || i == w + offset - 1) {
+                putchar(options[0]);
+                continue;
+            }
+            putchar(options[i%2+1]);
         }
-        putchar('X');
-        putchar('\n');
     }
 }
 
 void printRoof(int w){
     printf("%*c\n", w/2+1, 'X');
-    for(int i = 1, spaces = 1; i < w/2; i++, spaces+=2){
+    for(int i = 1, spaces = 1; i < w/2; i++, spaces += 2){
         printf("%*c%*c\n", w/2-i+1, 'X', spaces + 1, 'X');
     }
 }
