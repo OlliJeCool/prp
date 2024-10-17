@@ -4,7 +4,7 @@
 int takeAndValidateInput(int*, int*, int*);
 void printRoof(int);
 void printBase(int, int, int);
-void printLine(int, int, int, int);
+void printLine(int, int, int, int, int);
 void printFenceLine(int, int, int);
 void printError(int);
 
@@ -56,7 +56,7 @@ int takeAndValidateInput(int *w, int *h, int *fH){
         if(scanf("%d", fH) != 1){
             return 100;
         }
-        if(*fH >= *h){
+        if(*fH >= *h || *fH <= 0){
             return 103;
         }
     }
@@ -65,7 +65,7 @@ int takeAndValidateInput(int *w, int *h, int *fH){
 
 void printBase(int w, int h, int fH) {
     for(int i = 0; i < h; i++) {
-        printLine(w, h, i, i%2);
+        printLine(w, h, i, i%2, fH == 0 ? 1 : 0);
         if(fH != 0){
             printFenceLine(h, i, fH);
         }
@@ -73,11 +73,14 @@ void printBase(int w, int h, int fH) {
     }
 }
 
-void printLine(int w, int h, int currentH, int offset) {
+void printLine(int w, int h, int currentH, int offset, int simple) {
     if(currentH == 0 || currentH == h-1) {
         for(int i = 0; i < w; i++) {
             putchar('X');
         }
+    }
+    else if(simple){
+        printf("%*c", w-1, 'X');
     }
     else {
         char options[] = {'X','o','*'};
