@@ -1,13 +1,20 @@
+#include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
 #define START_SIZE 8
 
+typedef struct {
+    char ** memory;
+    size_t capacity;
+    size_t length;
+} loaded_lines;
+
+
 char* read_line();
+loaded_lines read_lines();
 
 int main(){
-    char * the_line = read_line();
-    printf("%s\n", the_line);
-    free(the_line);
+    loaded_lines lines = read_lines();
     return 0;
 }
 
@@ -19,8 +26,16 @@ char* read_line(){
     int capacity = START_SIZE;
     int length = 0;
 
-    for(char c; (c = getchar()) > '\n' ;){
-        if(length == capacity){
+    for(char c; (c = getchar()) != '\n' ;){
+        if(c == EOF){
+            if(length > 0){
+                break;
+            }
+            else{
+            return NULL;
+            }
+        }
+        if(length >= capacity){
         capacity *= 2;
         char * line_new = realloc(line, capacity);
         if(line_new == NULL){
@@ -38,6 +53,35 @@ char* read_line(){
         return NULL;
     }
     line = temp_line;
-    printf("%d\n", length+1);
+    printf("Final used: %d\n", length+1);
     return line;
+}
+
+loaded_lines read_lines(){
+    loaded_lines ll;
+    ll.capacity = START_SIZE;
+    ll.length = 0;
+    ll.memory = malloc(sizeof(char*));
+    if(ll.memory == NULL){
+        return NULL;
+    }
+    for(char* line; (line = read_line()) != NULL;){
+        if(ll.length*sizeof(char*) >= ll.capacity){
+            ll.capacity *= 2;
+            char** new_lines = realloc(ll.memory, ll.capacity);
+            if(new_lines == NULL){
+                for(int i = 0; i < ll.length; i++){
+                    free(ll.memory[i]);
+                }
+                free(ll.memory);
+                return NULL;
+            }
+            ll.memory = new_lines;
+        }
+        ll.memory[ll.length++] = line;
+        printf("Loaded %p, Cap %lu, Used %lu.\n", line, (long int)ll.capacity, (long int)ll.length);
+    }
+    printf("Final cap: %lu\n", (ll.capacity));
+    return ll;
+
 }
