@@ -62,21 +62,6 @@ void printOutput(int* primes, int count, long long int num) {
     putchar('\n');
 }
 
-/*void calculateInPrimes(long long int num, int* primeOnly, int* powers, int count) {
-    long long int temp = num;
-    for(int j = 0; j < count; j++) {
-        *(powers+j) = 0;
-    }
-    for(int i = count-1; i >= 2; i--) {
-        int prime = *(primeOnly+i);
-        if(temp % prime == 0) {
-            temp = temp / prime;
-            *(powers+i)+=1;
-            i++;
-        }
-    }
-}*/
-
 void printError(int ret) {
     if(ret == 100) {
         fprintf(stderr, "Error: Chybny vstup!\n");
