@@ -4,7 +4,6 @@
 int takeAndValidateInput(long long int *, int *);
 void printError(int);
 void evaluateNums(_Bool*, int *);
-void calculateInPrimes(long long int, int*, int*, int);
 void printOutput(int*, int, long long int);
 void extractPrimes(int*, _Bool*, int);
 
@@ -28,17 +27,19 @@ int main() {
 
 void printOutput(int* primes, int count, long long int num) {
     _Bool first = 1;
-    for(int i = 2; i < count; i++) {
+    int power = 0;
+    long long int temp = num;
+    printf("Prvociselny rozklad cisla %lld je:\n", num);
+    for(int i = 2; i <= count; i++) {
         int prime = *(primes+i);
-        long long int temp = num;
         if(num == 1){
-            printf("Prvociselny rozklad cisla %lld je:\n1\n", num);
+            printf("1");
             break;
         }
-        else if(prime > temp) {
+        if(prime > temp) {
             break;
         }
-        int power = 0;
+
         if(temp % prime == 0) {
             temp /= prime;
             power++;
@@ -46,36 +47,20 @@ void printOutput(int* primes, int count, long long int num) {
                 i--;
                 continue;
             }
-            else{
-                printf(first ? "" : " x ");
-                if(power > 1){
-                    printf("%d^%d", prime, power);
-                    first = first ? 0 : first;
-                    continue;
-                }
-                printf("%d", prime);
+            printf(first ? "" : " x ");
+            if(power > 1){
+                printf("%d^%d", prime, power);
                 first = first ? 0 : first;
+                power = 0;
+                continue;
             }
-
+            printf("%d", prime);
+            first = first ? 0 : first;
+            power = 0;
         }
     }
     putchar('\n');
 }
-
-/*void calculateInPrimes(long long int num, int* primeOnly, int* powers, int count) {
-    long long int temp = num;
-    for(int j = 0; j < count; j++) {
-        *(powers+j) = 0;
-    }
-    for(int i = count-1; i >= 2; i--) {
-        int prime = *(primeOnly+i);
-        if(temp % prime == 0) {
-            temp = temp / prime;
-            *(powers+i)+=1;
-            i++;
-        }
-    }
-}*/
 
 void printError(int ret) {
     if(ret == 100) {
@@ -93,7 +78,7 @@ int takeAndValidateInput(long long int* input, int* ret) {
 
 void extractPrimes(int* primeOnly, _Bool* primes, int count) {
     int index = 2;
-    for(int h = 2; h < MAX && index < count; h++) {
+    for(int h = 2; h < MAX && index <= count; h++) {
         if(*(primes+h)) {
             *(primeOnly+index) = h;
             index++;
@@ -116,5 +101,5 @@ void evaluateNums(_Bool *primes, int* primes_count) {
             }
         }
     }
-    *primes_count = MAX-2-temp;
+    *primes_count = MAX-temp;
 }
