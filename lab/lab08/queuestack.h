@@ -1,5 +1,7 @@
 #include <stdlib.h>
-#define QUEUESTACK_H_GUARD
+#ifndef QUEUESTACK_H_GUARD
+#define QUEUESTACK_H_GUARD 1
+
 
 struct queue_stack* create(int* return_status);
 void delete(struct queue_stack* self, int* return_status);
@@ -18,3 +20,5 @@ struct queue_stack {
     Node* tail;
     size_t size;
 };
+
+#endif
