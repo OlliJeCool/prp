@@ -8,8 +8,10 @@ typedef struct matrix {
     size_t cols;
 } Matrix;
 
-Matrix add_matrix(Matrix A, Matrix B);
-Matrix sub(Matrix A, Matrix B);
-Matrix mul(Matrix A, Matrix B);
+Matrix create(int r, int c);
+Matrix addm(Matrix A, Matrix B);
+Matrix subm(Matrix A, Matrix B);
+Matrix mulm(Matrix A, Matrix B);
+void printm(Matrix M);
 
 #endif //MATRIX_H
