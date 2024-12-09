@@ -17,38 +17,62 @@ typedef struct line_list {
 line* load_line(FILE*);
 line_list* load_lines(FILE*);
 void free_lines(line_list*);
-int lookup(line , line* );
+int lookup(line, line*, bool);
 line to_line(char* pattern);
+void colorize_and_print(const char* text, const char* pattern, bool use_regex);
+size_t str_len(const char* str);
+bool is_flag(const char* arg, const char* flag);
+void print_colored(const char* text, int start, int length);
 
 int main(int argc, char* argv[]) {
-    if (argc > 3) {
-        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+    bool use_regex = false;
+    bool colorize = false;
+    char* pattern_arg = NULL;
+    char* filename = NULL;
+
+    // Parse arguments
+    for (int i = 1; i < argc; i++) {
+        if (is_flag(argv[i], "-E")) {
+            use_regex = true;
+        } else if (is_flag(argv[i], "--color=always")) {
+            colorize = true;
+        } else if (pattern_arg == NULL) {
+            pattern_arg = argv[i];
+        } else {
+            filename = argv[i];
+        }
+    }
+
+    if (pattern_arg == NULL) {
+        fprintf(stderr, "Usage: %s [-E] [--color=always] <pattern> [filename]\n", argv[0]);
         return 1;
     }
-    FILE* file = NULL;
-    if(argc > 2) {
-        file = fopen(argv[2], "r");
-        if (!file) {
-            perror("Error opening file");
-            return 1;
-        }
-    } else {
-        file = stdin;
+
+    FILE* file = filename ? fopen(filename, "r") : stdin;
+    if (!file) {
+        perror("Error opening file");
+        return 1;
     }
 
     line_list* lines = load_lines(file);
-    fclose(file);
+    if (filename) fclose(file);
 
     if (!lines) {
         fprintf(stderr, "Error: Failed to load lines.\n");
         return 1;
     }
-    line pattern = to_line(argv[1]);
+
+    line pattern = to_line(pattern_arg);
     _Bool found = false;
+
     for (size_t i = 0; i < lines->count; i++) {
-        if(lookup(pattern, lines->lines[i]) == 0) {
+        if (lookup(pattern, lines->lines[i], use_regex) == 0) {
             found = true;
-            printf("%s\n", lines->lines[i]->data);
+            if (colorize) {
+                colorize_and_print(lines->lines[i]->data, pattern_arg, use_regex);
+            } else {
+                printf("%s\n", lines->lines[i]->data);
+            }
         }
     }
 
@@ -56,37 +80,43 @@ int main(int argc, char* argv[]) {
     return !found;
 }
 
+size_t str_len(const char* str) {
+    size_t length = 0;
+    while (str[length] != '\0') length++;
+    return length;
+}
+
+bool is_flag(const char* arg, const char* flag) {
+    size_t i = 0;
+    while (arg[i] == flag[i] && arg[i] != '\0' && flag[i] != '\0') i++;
+    return arg[i] == '\0' && flag[i] == '\0';
+}
+
 line* load_line(FILE* file) {
     char* nline;
-    if(!(nline = malloc(START_CAPACITY))) return NULL;
+    if (!(nline = malloc(START_CAPACITY))) return NULL;
     int length = 0, capacity = START_CAPACITY;
-    for(char c; (c = fgetc(file)) != EOF;) {
-        if(length+1 >= capacity) {
+    for (char c; (c = fgetc(file)) != EOF;) {
+        if (length + 1 >= capacity) {
             capacity *= 2;
             char* ecline;
-            if((ecline = realloc(nline, capacity)) == NULL) {
+            if ((ecline = realloc(nline, capacity)) == NULL) {
                 free(nline);
                 return NULL;
             }
             nline = ecline;
         }
-        if(c == '\n') break;
+        if (c == '\n') break;
         nline[length++] = c;
     }
-    if(length == 0 && feof(file)) {
+    if (length == 0 && feof(file)) {
         free(nline);
         return NULL;
     }
 
-    char* fcLine;
-    if((fcLine = realloc(nline, length+1)) == NULL) {
-        free(nline);
-        return NULL;
-    }
-    nline = fcLine;
-    nline[length] = '\0';
-    line* fLine;
-    if((fLine = malloc(sizeof(line))) == NULL) {
+    nline[length] = '\0'; // Ensure null-termination
+    line* fLine = malloc(sizeof(line));
+    if (!fLine) {
         free(nline);
         return NULL;
     }
@@ -96,15 +126,15 @@ line* load_line(FILE* file) {
 }
 
 line_list* load_lines(FILE* file) {
-    line** data;
-    if(!(data = malloc(sizeof(line*)*START_CAPACITY))) return NULL;
+    line** data = malloc(sizeof(line*) * START_CAPACITY);
+    if (!data) return NULL;
 
     int count = 0, capacity = START_CAPACITY;
-    for(line* l; (l = load_line(file)) != NULL; ) {
-        if(count >= capacity) {
-            capacity*= 2;
-            line** ndata;
-            if(!(ndata = realloc(data, capacity*sizeof(line*)))) {
+    for (line* l; (l = load_line(file)) != NULL;) {
+        if (count >= capacity) {
+            capacity *= 2;
+            line** ndata = realloc(data, capacity * sizeof(line*));
+            if (!ndata) {
                 free(data);
                 return NULL;
             }
@@ -112,15 +142,9 @@ line_list* load_lines(FILE* file) {
         }
         data[count++] = l;
     }
-    line** fdata;
-    if(!(fdata = realloc(data, (count+1)*sizeof(line*)))) {
-        free(data);
-        return NULL;
-    }
-    data = fdata;
-    line_list* list;
-    if(!(list = malloc(sizeof(line_list)))) {
-        for(int i = 0; i < count; i++) {
+    line_list* list = malloc(sizeof(line_list));
+    if (!list) {
+        for (int i = 0; i < count; i++) {
             free(data[i]->data);
             free(data[i]);
         }
@@ -133,37 +157,80 @@ line_list* load_lines(FILE* file) {
 }
 
 line to_line(char* pattern) {
-    int length=-1;
-    while(pattern[length++] != '\0');
+    size_t length = str_len(pattern);
     return (line){pattern, length};
 }
 
-int lookup(line pattern, line* line) {
-    int count = 0, index = 0;
-    for(int i = 0; i < line->length; i++) {
-        if(line->data[i] == pattern.data[index]) {
-            if(count == pattern.length-1) {
-                return 0;
+int lookup(line pattern, line* text_line, bool use_regex) {
+    size_t pat_len = pattern.length;
+    size_t text_len = text_line->length;
+    size_t i = 0, j = 0;
+
+    while (i < text_len) {
+        if (j < pat_len && (pattern.data[j] == '.' || pattern.data[j] == text_line->data[i])) {
+            // Match any character (.) or exact match
+            i++;
+            j++;
+        } else if (j < pat_len && pattern.data[j] == '?') {
+            // '?' Matches zero or one of the preceding character
+            j++;
+        } else if (j + 1 < pat_len && pattern.data[j + 1] == '*') {
+            // '*' Matches zero or more of the preceding character
+            if (j < pat_len && (pattern.data[j] == '.' || pattern.data[j] == text_line->data[i])) {
+                i++;
+            } else {
+                j += 2;
             }
-            count+=1;
-            index+=1;
+        } else if (j < pat_len && pattern.data[j] == '*') {
+            // Handle stray '*' without a preceding character
+            i++;
+        } else {
+            // No match, reset pattern pointer and move to next text character
+            i = i - j + 1; // Move `i` back to next possible starting position
+            j = 0;         // Reset pattern pointer
         }
-        else {
-            index = 0;
-            count = 0;
-        }
+
+        // If we've matched the entire pattern, return success
+        if (j == pat_len) return 0;
     }
-    return 1;
+
+    return 1; // No match found
 }
 
-int a_lookup(line pattern, line* line) {
-    int index = 0;
-    for(int i = 0; i < line->length; i++) {
 
-        if(pattern.data[index] == '?' && i > 0) {
+void print_colored(const char* text, int start, int length) {
+    for (int i = 0; i < start; i++) putchar(text[i]);
+    printf("\033[31m"); // Red color
+    for (int i = start; i < start + length; i++) putchar(text[i]);
+    printf("\033[0m"); // Reset color
+    for (int i = start + length; text[i] != '\0'; i++) putchar(text[i]);
+    putchar('\n');
+}
 
+void colorize_and_print(const char* text, const char* pattern, bool use_regex) {
+    size_t pat_len = str_len(pattern);
+    size_t text_len = str_len(text);
+
+    for (size_t i = 0; i <= text_len - pat_len; i++) {
+        size_t match_len = 0;
+        for (size_t j = 0; j < pat_len; j++) {
+            char pc = pattern[j];
+            char tc = text[i + j];
+
+            if (use_regex && pc == '.') {
+                match_len++;
+            } else if (tc == pc) {
+                match_len++;
+            } else {
+                break;
+            }
+        }
+        if (match_len == pat_len) {
+            print_colored(text, i, pat_len);
+            return;
         }
     }
+    printf("%s\n", text);
 }
 
 void free_lines(line_list* list) {
